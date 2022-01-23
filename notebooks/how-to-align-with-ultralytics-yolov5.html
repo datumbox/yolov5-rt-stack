@@ -389,13 +389,9 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">yolort.models.yolo</span> <span class="kn">import</span> <span class="n">YOLO</span>
-<span class="kn">from</span> <span class="nn">yolort.utils</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">cv2_imshow</span><span class="p">,</span>
-    <span class="n">get_image_from_url</span><span class="p">,</span>
-    <span class="n">read_image_to_tensor</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">yolort.utils</span> <span class="kn">import</span> <span class="n">cv2_imshow</span><span class="p">,</span> <span class="n">get_image_from_url</span><span class="p">,</span> <span class="n">read_image_to_tensor</span>
 <span class="kn">from</span> <span class="nn">yolort.utils.image_utils</span> <span class="kn">import</span> <span class="n">plot_one_box</span><span class="p">,</span> <span class="n">color_list</span>
-<span class="kn">from</span> <span class="nn">yolort.v5</span> <span class="kn">import</span> <span class="n">load_yolov5_model</span><span class="p">,</span> <span class="n">letterbox</span><span class="p">,</span> <span class="n">non_max_suppression</span><span class="p">,</span> <span class="n">scale_coords</span>
+<span class="kn">from</span> <span class="nn">yolort.v5</span> <span class="kn">import</span> <span class="n">load_yolov5_model</span><span class="p">,</span> <span class="n">letterbox</span><span class="p">,</span> <span class="n">non_max_suppression</span><span class="p">,</span> <span class="n">scale_coords</span><span class="p">,</span> <span class="n">attempt_download</span>
 </pre></div>
 </div>
 </div>
@@ -406,12 +402,13 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># img_path = &quot;https://raw.githubusercontent.com/zhiqwang/yolov5-rt-stack/main/test/assets/zidane.jpg&quot;</span>
-<span class="n">img_path</span> <span class="o">=</span> <span class="s2">&quot;https://gitee.com/zhiqwang/yolov5-rt-stack/raw/master/test/assets/zidane.jpg&quot;</span>
-<span class="n">img_raw</span> <span class="o">=</span> <span class="n">get_image_from_url</span><span class="p">(</span><span class="n">img_path</span><span class="p">)</span>
+<span></span><span class="n">img_source</span> <span class="o">=</span> <span class="s2">&quot;https://huggingface.co/spaces/zhiqwang/assets/resolve/main/bus.jpg&quot;</span>
+<span class="c1"># img_source = &quot;https://huggingface.co/spaces/zhiqwang/assets/resolve/main/zidane.jpg&quot;</span>
+<span class="n">img_raw</span> <span class="o">=</span> <span class="n">get_image_from_url</span><span class="p">(</span><span class="n">img_source</span><span class="p">)</span>
 
 <span class="c1"># yolov5s6.pt is downloaded from &#39;https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5n6.pt&#39;</span>
-<span class="n">path_ultralytics_weights</span> <span class="o">=</span> <span class="s1">&#39;yolov5n6.pt&#39;</span>
+<span class="n">model_path</span> <span class="o">=</span> <span class="s1">&#39;yolov5n6.pt&#39;</span>
+<span class="n">checkpoint_path</span> <span class="o">=</span> <span class="n">attempt_download</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -420,10 +417,23 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">img_size</span> <span class="o">=</span> <span class="mi">640</span>
+<span class="n">stride</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">score_thresh</span> <span class="o">=</span> <span class="mf">0.35</span>
+<span class="n">iou</span> <span class="o">=</span> <span class="mf">0.45</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Preprocess</span>
-<span class="n">img</span> <span class="o">=</span> <span class="n">letterbox</span><span class="p">(</span><span class="n">img_raw</span><span class="p">,</span> <span class="n">new_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">640</span><span class="p">,</span> <span class="mi">640</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">img</span> <span class="o">=</span> <span class="n">read_image_to_tensor</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
-<span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">letterbox</span><span class="p">(</span><span class="n">img_raw</span><span class="p">,</span> <span class="n">new_shape</span><span class="o">=</span><span class="p">(</span><span class="n">img_size</span><span class="p">,</span> <span class="n">img_size</span><span class="p">),</span> <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">read_image_to_tensor</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -431,19 +441,15 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="Load-model-as-ultralytics-and-inference">
 <h2>Load model as ultralytics and inference<a class="headerlink" href="#Load-model-as-ultralytics-and-inference" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">score_thresh</span> <span class="o">=</span> <span class="mf">0.30</span>
-<span class="n">iou</span> <span class="o">=</span> <span class="mf">0.45</span>
-
-<span class="n">model</span> <span class="o">=</span> <span class="n">load_yolov5_model</span><span class="p">(</span><span class="n">path_ultralytics_weights</span><span class="p">,</span> <span class="n">autoshape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">conf</span> <span class="o">=</span> <span class="n">score_thresh</span>  <span class="c1"># confidence threshold (0-1)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">iou</span> <span class="o">=</span> <span class="n">iou</span>  <span class="c1"># NMS IoU threshold (0-1)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># (optional list) filter by class, i.e. = [0, 15, 16] for persons, cats and dogs</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span></span><span class="n">model_yolov5</span> <span class="o">=</span> <span class="n">load_yolov5_model</span><span class="p">(</span><span class="n">checkpoint_path</span><span class="p">,</span> <span class="n">autoshape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model_yolov5</span> <span class="o">=</span> <span class="n">model_yolov5</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">model_yolov5</span><span class="o">.</span><span class="n">conf</span> <span class="o">=</span> <span class="n">score_thresh</span>  <span class="c1"># confidence threshold (0-1)</span>
+<span class="n">model_yolov5</span><span class="o">.</span><span class="n">iou</span> <span class="o">=</span> <span class="n">iou</span>  <span class="c1"># NMS IoU threshold (0-1)</span>
+<span class="n">model_yolov5</span> <span class="o">=</span> <span class="n">model_yolov5</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -488,25 +494,25 @@ div.rendered_html tbody tr:hover {
  31          [-1, 12]  1         0  yolort.v5.models.common.Concat          [1]
  32                -1  1    329216  yolort.v5.models.common.C3              [384, 256, 1, False]
  33  [23, 26, 29, 32]  1    164220  yolort.v5.models.yolo.Detect            [80, [[19, 27, 44, 40, 38, 94], [96, 68, 86, 152, 180, 137], [140, 301, 303, 264, 238, 542], [436, 615, 739, 380, 925, 792]], [64, 128, 192, 256]]
-/home/chi/anaconda3/envs/yolo/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  /opt/conda/conda-bld/pytorch_1634272106004/work/aten/src/ATen/native/TensorShape.cpp:2157.)
+/opt/conda/lib/python3.8/site-packages/torch/functional.py:445: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at  ../aten/src/ATen/native/TensorShape.cpp:2157.)
   return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
 Model Summary: 355 layers, 3246940 parameters, 3246940 gradients, 4.6 GFLOPs
 
 </pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
-    <span class="n">ultralytics_dets</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">img</span><span class="p">[</span><span class="kc">None</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">ultralytics_dets</span> <span class="o">=</span> <span class="n">non_max_suppression</span><span class="p">(</span><span class="n">ultralytics_dets</span><span class="p">,</span> <span class="n">score_thresh</span><span class="p">,</span> <span class="n">iou</span><span class="p">,</span> <span class="n">agnostic</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ultralytics_dets</span> <span class="o">=</span> <span class="n">model_yolov5</span><span class="p">(</span><span class="n">image</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ultralytics_dets</span> <span class="o">=</span> <span class="n">non_max_suppression</span><span class="p">(</span><span class="n">ultralytics_dets</span><span class="p">,</span> <span class="n">score_thresh</span><span class="p">,</span> <span class="n">iou</span><span class="p">,</span> <span class="n">agnostic</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -515,35 +521,34 @@ Model Summary: 355 layers, 3246940 parameters, 3246940 gradients, 4.6 GFLOPs
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-tensor([[7.20445e+01, 1.13266e+02, 5.26275e+02, 3.68607e+02, 8.27893e-01, 0.00000e+00],
-        [3.72172e+02, 2.75398e+01, 5.79932e+02, 3.68102e+02, 7.79096e-01, 0.00000e+00],
-        [2.08252e+02, 2.29428e+02, 2.52494e+02, 3.69399e+02, 3.11370e-01, 2.70000e+01]])
+tensor([[ 35.26947, 133.40977, 496.86469, 439.13141,   0.88235,   5.00000],
+        [ 45.87330, 229.64430, 159.15872, 531.91492,   0.84495,   0.00000],
+        [145.77780, 228.77318, 220.91098, 514.98694,   0.72589,   0.00000],
+        [417.83066, 221.98871, 495.86893, 518.30176,   0.70359,   0.00000]], device=&#39;cuda:0&#39;)
 </pre></div></div>
 </div>
 </div>
 <div class="section" id="Updating-model-weights-from-ultralytics-to-yolort-and-inference">
 <h2>Updating model weights from ultralytics to yolort and inference<a class="headerlink" href="#Updating-model-weights-from-ultralytics-to-yolort-and-inference" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">YOLO</span><span class="o">.</span><span class="n">load_from_yolov5</span><span class="p">(</span>
-    <span class="n">path_ultralytics_weights</span><span class="p">,</span>
+<span></span><span class="n">model_yolort</span> <span class="o">=</span> <span class="n">YOLO</span><span class="o">.</span><span class="n">load_from_yolov5</span><span class="p">(</span>
+    <span class="n">checkpoint_path</span><span class="p">,</span>
     <span class="n">score_thresh</span><span class="o">=</span><span class="n">score_thresh</span><span class="p">,</span>
     <span class="n">nms_thresh</span><span class="o">=</span><span class="n">iou</span><span class="p">,</span>
     <span class="n">version</span><span class="o">=</span><span class="s2">&quot;r6.0&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-
-<span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
-    <span class="n">yolort_dets</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">img</span><span class="p">[</span><span class="kc">None</span><span class="p">])</span>
+<span class="n">model_yolort</span> <span class="o">=</span> <span class="n">model_yolort</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="n">model_yolort</span> <span class="o">=</span> <span class="n">model_yolort</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -592,8 +597,18 @@ Model Summary: 355 layers, 3246940 parameters, 3246940 gradients, 4.6 GFLOPs
 
 </pre></div></div>
 </div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">yolort_dets</span> <span class="o">=</span> <span class="n">model_yolort</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -607,13 +622,14 @@ Model Summary: 355 layers, 3246940 parameters, 3246940 gradients, 4.6 GFLOPs
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 Detection boxes with yolort:
-tensor([[ 72.04449, 113.26617, 526.27472, 368.60730],
-        [372.17160,  27.53978, 579.93250, 368.10205],
-        [208.25206, 229.42764, 252.49397, 369.39944]])
+tensor([[ 35.26947, 133.40977, 496.86469, 439.13141],
+        [ 45.87330, 229.64430, 159.15872, 531.91492],
+        [145.77780, 228.77318, 220.91098, 514.98694],
+        [417.83066, 221.98871, 495.86893, 518.30176]], device=&#39;cuda:0&#39;)
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -627,11 +643,11 @@ tensor([[ 72.04449, 113.26617, 526.27472, 368.60730],
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 Detection scores with yolort:
-tensor([0.82789, 0.77910, 0.31137])
+tensor([0.88235, 0.84495, 0.72589, 0.70359], device=&#39;cuda:0&#39;)
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -645,26 +661,23 @@ tensor([0.82789, 0.77910, 0.31137])
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 Detection labels with yolort:
-tensor([ 0,  0, 27])
+tensor([5, 0, 0, 0], device=&#39;cuda:0&#39;)
 </pre></div></div>
 </div>
 </div>
 <div class="section" id="Verify-the-detection-results-between-yolort-and-ultralytics">
 <h2>Verify the detection results between yolort and ultralytics<a class="headerlink" href="#Verify-the-detection-results-between-yolort-and-ultralytics" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Testing boxes</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span>
-    <span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;boxes&#39;</span><span class="p">],</span> <span class="n">ultralytics_dets</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">4</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-05</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-07</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;boxes&#39;</span><span class="p">],</span> <span class="n">ultralytics_dets</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">4</span><span class="p">])</span>
 <span class="c1"># Testing scores</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span>
-    <span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;scores&#39;</span><span class="p">],</span> <span class="n">ultralytics_dets</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-05</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-07</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;scores&#39;</span><span class="p">],</span> <span class="n">ultralytics_dets</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">])</span>
 <span class="c1"># Testing labels</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span>
-    <span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;labels&#39;</span><span class="p">],</span> <span class="n">ultralytics_dets</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-05</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-07</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;labels&#39;</span><span class="p">],</span> <span class="n">ultralytics_dets</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int64</span><span class="p">))</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Exported model has been tested, and the result looks good!&quot;</span><span class="p">)</span>
 </pre></div>
@@ -682,15 +695,15 @@ Exported model has been tested, and the result looks good!
 <div class="section" id="Detection-output-visualisation">
 <h2>Detection output visualisation<a class="headerlink" href="#Detection-output-visualisation" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Get label names</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 
-<span class="c1"># label_path = &quot;https://raw.githubusercontent.com/zhiqwang/yolov5-rt-stack/master/notebooks/assets/coco.names&quot;</span>
-<span class="n">label_path</span> <span class="o">=</span> <span class="s2">&quot;https://gitee.com/zhiqwang/yolov5-rt-stack/raw/master/notebooks/assets/coco.names&quot;</span>
+<span class="c1"># label_path = &quot;https://raw.githubusercontent.com/zhiqwang/yolov5-rt-stack/main/notebooks/assets/coco.names&quot;</span>
+<span class="n">label_path</span> <span class="o">=</span> <span class="s2">&quot;https://huggingface.co/spaces/zhiqwang/assets/resolve/main/coco.names&quot;</span>
 <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label_path</span><span class="p">)</span>
 <span class="n">names</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span>
 
@@ -710,17 +723,17 @@ Exported model has been tested, and the result looks good!
 </div>
 <p>Hah, that’s the trick to rescale the box correctly</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">boxes</span> <span class="o">=</span> <span class="n">scale_coords</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;boxes&#39;</span><span class="p">],</span> <span class="n">img_raw</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span></span><span class="n">boxes</span> <span class="o">=</span> <span class="n">scale_coords</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;boxes&#39;</span><span class="p">],</span> <span class="n">img_raw</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 <span class="n">labels</span> <span class="o">=</span> <span class="n">yolort_dets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -735,7 +748,7 @@ Exported model has been tested, and the result looks good!
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_how-to-align-with-ultralytics-yolov5_22_0.png" src="../_images/notebooks_how-to-align-with-ultralytics-yolov5_22_0.png" />
+<img alt="../_images/notebooks_how-to-align-with-ultralytics-yolov5_24_0.png" src="../_images/notebooks_how-to-align-with-ultralytics-yolov5_24_0.png" />
 </div>
 </div>
 </div>
